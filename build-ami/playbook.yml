@@ -1,0 +1,47 @@
+---
+- name: Install Apache2
+  hosts: 'all'
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: Package Upgrade
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Package Upgrade
+      apt:
+        upgrade: true
+    
+    - name: Install Apache2
+      apt: 
+        name: apache2 
+        update_cache: yes
+        state: latest
+        force_apt_get: yes
+    
+    - name: Enable Apache2
+      systemd:
+        name: apache2
+        enabled: true
+    
+    - name: Get information about the system
+      uri:
+        url: http://169.254.169.254/latest/meta-data/instance-id
+        return_content: yes
+      register: instance_info
+
+    - name: Update page HTML
+      replace:
+        path: /var/www/html/index.html
+        regexp: 'works'
+        replace: 'works - Server: {{ ansible_hostname }} - {{ instance_info.content }}'
+    
+    - name: Read a file content
+      shell: |
+        cat /var/www/html/index.html
+      register: file_content
+
+    - name: Print the file content to a console
+      debug:
+        msg: "{{ file_content.stdout }}"
